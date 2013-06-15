@@ -52,7 +52,9 @@ MinSchema.prototype.verify = function(data){
 		} else if(!Object.prototype.hasOwnProperty.call(data, k)){
 
 			if(val.defaults){
-				data[k] = val.defaults;
+				data[k] = typeof val.defaults === "function" ?
+					val.defaults(k, data) :
+					val.defaults;
 			}
 			return !val.required; 
 
