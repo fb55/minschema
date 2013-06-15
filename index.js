@@ -49,7 +49,7 @@ MinSchema.prototype.verify = function(data){
 			if(typeof data[k] !== "boolean") data[k] = data[k] === "on";
 			return true;
 
-		} else if(!Object.prototype.hasOwnProperty(data, k)){
+		} else if(!Object.prototype.hasOwnProperty.call(data, k)){
 
 			if(val.defaults){
 				data[k] = val.defaults;
