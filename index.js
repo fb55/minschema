@@ -6,8 +6,9 @@ function MinSchema(schema, options){
 	this._schema = schema;
 	this._options = options;
 	this._keys = Object.keys(schema);
+	this._requireDefault = !options || !("requireDefault" in options) || options.requireDefault;
 
-	var requireDefault = !options || !("requireDefault" in options) || options.requireDefault;
+	var requireDefault = this._requireDefault;
 
 	this._keys.forEach(function(k){
 		var val = schema[k];
@@ -35,6 +36,7 @@ function MinSchema(schema, options){
 MinSchema.prototype.verify = function(data){
 
 	var schema = this._schema;
+	var requireDefault = this._requireDefault;
 	return this._keys.every(function(k){
 
 		var val = schema[k];
@@ -56,7 +58,7 @@ MinSchema.prototype.verify = function(data){
 					val.defaults(k, data) :
 					val.defaults;
 			}
-			return !val.required; 
+			return typeof val.required === "boolean" ? val.required : requireDefault;
 
 		} else if(Array.isArray(type)){
 
