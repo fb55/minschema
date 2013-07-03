@@ -6,18 +6,19 @@ function MinSchema(schema, options){
 	this._schema = schema;
 	this._options = options;
 	this._keys = Object.keys(schema);
-	this._requireDefault = !options || !("requireDefault" in options) || options.requireDefault;
 
-	var requireDefault = this._requireDefault;
+	var requireDefault = !options || !("requireDefault" in options) || options.requireDefault;
 
 	this._keys.forEach(function(k){
 		var val = schema[k];
 
-		if(typeof val !== "object" || Array.isArray(val)){
+		if(typeof val !== "object" || val instanceof MinSchema || Array.isArray(val)){
 			schema[k] = val = {
 				type: val,
 				required: requireDefault
 			};
+		} else if(!("required" in val)){
+			val.required = requireDefault;
 		}
 
 		var type = val.type;
@@ -36,7 +37,7 @@ function MinSchema(schema, options){
 MinSchema.prototype.verify = function(data){
 
 	var schema = this._schema;
-	var requireDefault = this._requireDefault;
+
 	return this._keys.every(function(k){
 
 		var val = schema[k];
@@ -58,16 +59,28 @@ MinSchema.prototype.verify = function(data){
 					val.defaults(k, data) :
 					val.defaults;
 			}
-			return typeof val.required === "boolean" ? val.required : requireDefault;
+			return !val.required;
 
 		} else if(Array.isArray(type)){
 
+			if("multiple" in val){
+				if(!Array.isArray(data[k])){
+					data[k] = [data[k]];
+				}
+
+				return data[k].every(function(value){
+					return type.some(function(option){
+						return typeof option === "string" ?
+							option === value :
+							option.name === value;
+					});
+				});
+			}
+
 			return type.some(function(option){
-
 				return typeof option === "string" ?
-					option === type :
-					option.name === type;
-
+					option === data[k] :
+					option.name === data[k];
 			});
 
 		} else if(type === Number){
@@ -127,7 +140,7 @@ MinSchema.prototype.toString = function(){
 
 			data += " " + name;
 			if(name !== "required" && name !== "disabled"){
-				data += "\"" + encode(val[name]) + "\"";
+				data += "=\"" + encode(val[name] + "") + "\"";
 			}
 
 		});
@@ -179,13 +192,13 @@ MinSchema.prototype.toString = function(){
 
 		} else if(Array.isArray(type)){
 
-			data += "<select name=\"" + htmlName;
+			data += "<select name=\"" + htmlName + "\"";
 
 			if(val.multiple) data += " multiple";
 
 			addExtraFields(extraFields);
 
-			data +=  "\">";
+			data +=  ">";
 
 			type.forEach(addOption);
 
